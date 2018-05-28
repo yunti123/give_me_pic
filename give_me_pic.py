@@ -12,6 +12,7 @@ from time import sleep
 from bs4 import BeautifulSoup
 from PIL import Image
 
+max_video = 2
 video_path = "./download"
 tmp_path = "./download/tmp"
 img_path = "./image"
@@ -139,7 +140,7 @@ def find_link():
             temp = url_header + ret['href']
             urls.put(temp)
             count += 1
-            if count >= 2:
+            if count >= max_video:
                 break
         
         
@@ -161,7 +162,7 @@ if not os.path.exists(img_path):
     os.makedirs(img_path)
 
 
-print("\nkeywors are fetching\n")
+print("\nkeywords are fetching\n")
 
 with open(plz) as f:
     for line in f:
