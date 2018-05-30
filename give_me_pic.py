@@ -12,7 +12,10 @@ from time import sleep
 from bs4 import BeautifulSoup
 from PIL import Image
 
-max_video = 2
+MAX_LINK = 1
+FRAME-RATE = 10
+ADD_W = False
+
 video_path = "./download"
 tmp_path = "./download/tmp"
 img_path = "./image"
@@ -95,8 +98,8 @@ def give_me_image():
             # take image from video
             succ,image = video.read()
 
-            # save image every 50. frame
-            if index > 2000 and index%50 == 0:
+            # save image every FRAME_RATE. frame
+            if index > 2000 and index%FRAME_RATE == 0:
                             
                 img_des = img_des_dir + "/" +"{}.jpg".format(sample)
                 cv2.imwrite(img_des,image)
@@ -140,7 +143,7 @@ def find_link():
             temp = url_header + ret['href']
             urls.put(temp)
             count += 1
-            if count >= max_video:
+            if count >= MAX_LINK:
                 break
         
         
