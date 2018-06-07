@@ -12,10 +12,9 @@ from time import sleep
 from bs4 import BeautifulSoup
 from PIL import Image
 
-MAX_LINK = 1
-FRAME-RATE = 10
+MAX_VIDEO = 1
+FRAME_RATE = 10
 ADD_W = False
-
 video_path = "./download"
 tmp_path = "./download/tmp"
 img_path = "./image"
@@ -96,16 +95,21 @@ def give_me_image():
                 os.makedirs(img_des_dir)
             
             # take image from video
+            # save image every FRAME_RATE. frame
             succ,image = video.read()
 
-            # save image every FRAME_RATE. frame
             if index > 2000 and index%FRAME_RATE == 0:
                             
                 img_des = img_des_dir + "/" +"{}.jpg".format(sample)
                 cv2.imwrite(img_des,image)
-                img = Image.open(img_des)
-                img.save(img_des,quality=85, optimize = True)
-                
+                sleep(0.001)
+                try:
+                    img = Image.open(img_des)
+                    img.save(img_des,quality=85, optimize = True)
+                except IOError:
+                    print("IO Error on 105")
+                    os.remove(img_des)
+  
                 sample += 1
 
             index += 1
@@ -126,8 +130,11 @@ def give_me_image():
 def find_link():
 
     while True:    
-        
-        add = ""
+        if ADD_W:        
+            add = " walkthrought"
+        else:
+            add = ""
+
         query_header = "https://www.youtube.com/results?search_query="
         url_header = "https://www.youtube.com"
         search = keys.get() + add
@@ -143,7 +150,7 @@ def find_link():
             temp = url_header + ret['href']
             urls.put(temp)
             count += 1
-            if count >= MAX_LINK:
+            if count >= MAX_VIDEO:
                 break
         
         
