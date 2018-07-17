@@ -61,8 +61,8 @@ def download():
             else:
                 temp = lis[1]
             
-            src = video_path + "/" + temp
-            des = tmp_path + "/" + temp
+            src = video_path + os.sep + temp
+            des = tmp_path + os.sep + temp
             shutil.move(src,des)        
             names.put(temp)        
             paths.put(des)
@@ -89,7 +89,7 @@ def give_me_image():
 
         while succ:
 
-            img_des_dir = img_path + "/" + name
+            img_des_dir = img_path + os.sep + name
             
             if not os.path.exists(img_des_dir):
                 os.makedirs(img_des_dir)
@@ -100,7 +100,7 @@ def give_me_image():
 
             if index > 2000 and index%FRAME_RATE == 0:
                             
-                img_des = img_des_dir + "/" +"{}.jpg".format(sample)
+                img_des = img_des_dir + os.sep +"{}.jpg".format(sample)
                 cv2.imwrite(img_des,image)
                 sleep(0.001)
                 try:
@@ -131,7 +131,7 @@ def find_link():
 
     while True:    
         if ADD_W:        
-            add = " walkthrought"
+            add = " walkthrought part 1"
         else:
             add = ""
 
