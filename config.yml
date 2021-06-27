@@ -1,0 +1,9 @@
+MAX_VIDEO_PER_KEYWORD: 2
+FRAME_RATE: 30
+VIDEO_DOWNLOAD_PATH: ./download
+TMP_PATH: ./download/tmp
+IMG_OUT_PATH: ./images
+
+KEY_WORDS:
+  -  horse
+  - funny dogs

@@ -1,72 +1,77 @@
-import os
-import shutil
-import cv2
-import urllib
-import urllib2
-import glob
-
-from pytube import YouTube
+from webdriver_manager.firefox import GeckoDriverManager
+from multiprocessing import JoinableQueue
+from selenium import webdriver
 from threading import Thread
-from Queue import Queue
+from pytube import YouTube
 from time import sleep
-from bs4 import BeautifulSoup
 from PIL import Image
+import urllib
+import shutil
+import yaml
+import cv2
+import os
 
-MAX_VIDEO = 1
-FRAME_RATE = 10
-ADD_W = False
-video_path = "./download"
-tmp_path = "./download/tmp"
-img_path = "./image"
-plz = "./key.plz"
+
+with open('./config.yml') as conf:
+    config = yaml.load(conf, Loader=yaml.FullLoader)
+
+MAX_VIDEO = config['MAX_VIDEO_PER_KEYWORD']
+FRAME_RATE = config['FRAME_RATE']
+img_path = config['IMG_OUT_PATH']
+kws = config["KEY_WORDS"]
+
+video_path = config['VIDEO_DOWNLOAD_PATH']
+tmp_path = config['TMP_PATH']
   
 
-urls = Queue()
-paths = Queue()
-names = Queue()
-keys = Queue()
+options = webdriver.FirefoxOptions()
+options.set_headless()
+browser = webdriver.Firefox(executable_path=GeckoDriverManager().install(),options=options)
 
-"""
+urls = JoinableQueue()
+paths = JoinableQueue()
+names = JoinableQueue()
+keys = JoinableQueue()
 
-        Starting functions
-
-"""
 
 def download():
     
     while True:
-
-        print("\nvideo capturing")
-        
-        # get url from queue        
-        url = urls.get()
-        # get video from url
-        yt = YouTube(url)
-        title = yt.title
-        # get stream parameters for 480p
-        stream = yt.streams.get_by_itag(135)
-
-        print("\n" + title + " downloading ...\n")
-
-        # start dowmload
-        stream.download(video_path)
-
-        print("\n" + title+" dowloaded\n")
-        
-        # move to tmp    
-        lis = os.listdir(video_path)
-        if not len(lis) <= 1:
-            if not lis[0] == "tmp":
-                temp = lis[0]
-            else:
-                temp = lis[1]
+        try:
+            print("\nvideo capturing")
             
-            src = video_path + os.sep + temp
-            des = tmp_path + os.sep + temp
-            shutil.move(src,des)        
-            names.put(temp)        
-            paths.put(des)
+            # get url from queue        
+            url = urls.get()
+            # get video from url
+            yt = YouTube(url)
+            sleep(1)
+            title = yt.title
+            # get stream parameters for 480p
+            stream = yt.streams.get_by_itag(135)
+
+            print("\n" + title + " downloading ...\n")
+
+            # start dowmload
+            stream.download(video_path)
+
+            print("\n" + title+" dowloaded\n")
+
+            # move to tmp    
+            lis = os.listdir(video_path)
+            if not len(lis) <= 1:
+                if not lis[0] == "tmp":
+                    temp = lis[0]
+                else:
+                    temp = lis[1]
                 
+                src = video_path + os.sep + temp
+                des = tmp_path + os.sep + temp
+                shutil.move(src,des)        
+                names.put(temp)        
+                paths.put(des)
+        except:
+            print("An error occur on try to download: {}".format(url))
+            pass        
 
         urls.task_done()
 
@@ -98,7 +103,7 @@ def give_me_image():
             # save image every FRAME_RATE. frame
             succ,image = video.read()
 
-            if index > 2000 and index%FRAME_RATE == 0:
+            if index > 100 and index%FRAME_RATE == 0:
                             
                 img_des = img_des_dir + os.sep +"{}.jpg".format(sample)
                 cv2.imwrite(img_des,image)
@@ -130,72 +135,76 @@ def give_me_image():
 def find_link():
 
     while True:    
-        if ADD_W:        
-            add = " walkthrought part 1"
-        else:
-            add = ""
+
 
         query_header = "https://www.youtube.com/results?search_query="
-        url_header = "https://www.youtube.com"
-        search = keys.get() + add
-         
-        query = urllib.quote(search)
-        url = query_header + query
-        response = urllib2.urlopen(url)
-        res = response.read()
-
-        soup = BeautifulSoup(res,"lxml")
-        count = 0
-        for ret in soup.findAll(attrs = {'class':'yt-uix-tile-link'}):
-            temp = url_header + ret['href']
-            urls.put(temp)
-            count += 1
-            if count >= MAX_VIDEO:
-                break
         
+        search = keys.get()
+         
+        query = urllib.parse.quote(search)
+        url = query_header + query
+
+        browser.get(url)
+        sleep(1)
+
+        count = 0
+        for ret in browser.find_elements_by_id("thumbnail"):
+            try:
+                if ret.get_attribute('class') == "yt-simple-endpoint inline-block style-scope ytd-thumbnail":
+                    temp = ret.get_attribute('href')
+                    if temp != None:
+                        urls.put(temp)
+                        count += 1
+                        if count >= MAX_VIDEO:
+                            break
+            except:
+                pass
+
         
         keys.task_done()
         
-"""
-
-        Main Program
-
-"""
-
-if not os.path.exists(video_path):
-    os.makedirs(video_path)
-
-if not os.path.exists(tmp_path):
-    os.makedirs(tmp_path)
-
-if not os.path.exists(img_path):
-    os.makedirs(img_path)
 
 
-print("\nkeywords are fetching\n")
+if __name__ == "__main__":
 
-with open(plz) as f:
-    for line in f:
-        keys.put(line)
+    if not os.path.exists(video_path):
+        os.makedirs(video_path)
 
+    if not os.path.exists(tmp_path):
+        os.makedirs(tmp_path)
 
-k = Thread(target = find_link)
-k.daemon = True
-
-d = Thread(target = download) 
-d.daemon = True
-
-i = Thread(target = give_me_image)
-i.daemon = True
-
-k.start()
-d.start()
-i.start()
-
-keys.join()
-urls.join()
-paths.join()
-names.join()
+    if not os.path.exists(img_path):
+        os.makedirs(img_path)
 
 
-print("\nDone\n")
+    print("\nkeywords are fetching\n")
+
+    
+    for kw in kws:
+        keys.put(kw)
+
+
+    k = Thread(target = find_link)
+    k.daemon = True
+
+    d = Thread(target = download) 
+    d.daemon = True
+
+    i = Thread(target = give_me_image)
+    i.daemon = True
+
+    k.start()
+    d.start()
+    i.start()
+
+    keys.join()
+    urls.join()
+    paths.join()
+    names.join()
+
+    try:
+        shutil.rmtree(video_path)
+    except OSError as e:
+        print("Error: {} : {}".format(video_path, e.strerror))
+
+    print("\nDone\n")
