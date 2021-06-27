@@ -104,11 +104,10 @@ def give_me_image():
             succ,image = video.read()
 
             if index > 100 and index%FRAME_RATE == 0:
-                            
-                img_des = img_des_dir + os.sep +"{}.jpg".format(sample)
-                cv2.imwrite(img_des,image)
-                sleep(0.001)
-                try:
+                try:     
+                    img_des = img_des_dir + os.sep +"{}.jpg".format(sample)
+                    cv2.imwrite(img_des,image)
+                    sleep(0.001)
                     img = Image.open(img_des)
                     img.save(img_des,quality=85, optimize = True)
                 except IOError:
@@ -152,7 +151,7 @@ def find_link():
             try:
                 if ret.get_attribute('class') == "yt-simple-endpoint inline-block style-scope ytd-thumbnail":
                     temp = ret.get_attribute('href')
-                    if temp != None:
+                    if temp != None and len(temp.split('youtube'))>1:
                         urls.put(temp)
                         count += 1
                         if count >= MAX_VIDEO:

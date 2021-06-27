@@ -1,6 +1,6 @@
-selenium
-webdriver-manager
+selenium==3.141.0
+webdriver-manager == 3.2.1
+pytube==10.8.5
 opencv-python
-pytube
 Pillow
 PyYAML
